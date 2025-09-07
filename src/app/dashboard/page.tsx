@@ -90,9 +90,9 @@ export default function Dashboard() {
       <div className="min-h-screen flex flex-col justify-center items-center">
         <h1 className="text-4xl font-bold mb-4">Task Manager</h1>
         <p>Loading...</p>
-        <pre className="text-xs mt-4 p-2 bg-gray-100 rounded">
+        {/* <pre className="text-xs mt-4 p-2 bg-gray-100 rounded">
           {JSON.stringify({ status, session: session?.user }, null, 2)}
-        </pre>
+        </pre> */}
       </div>
     )
 
