@@ -32,7 +32,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "72px auto", padding: 24 }}>
+    <div style={{ maxWidth: 420, margin: "72px auto", padding: 24 }} className="bg-amber-100 rounded-lg shadow-md">
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>Create your account</h1>
       <form onSubmit={onSubmit}>
         {error && (

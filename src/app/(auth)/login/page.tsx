@@ -38,7 +38,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '72px auto', padding: 24 }}>
+    <div style={{ maxWidth: 420, margin: '72px auto', padding: 24 }} className="bg-amber-100 rounded-lg shadow-md">
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>Log in</h1>
       <form onSubmit={handleSubmit}>
         <label htmlFor="email" style={{ display: 'block', fontWeight: 600 }}>Email</label>

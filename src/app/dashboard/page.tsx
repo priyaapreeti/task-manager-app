@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 
@@ -18,6 +18,14 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTask, setNewTask] = useState({ title: '', description: '' })
   const [loading, setLoading] = useState(true)
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const tasksPerPage = 5
+
+  // Search & filter
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all')
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -85,33 +93,46 @@ export default function Dashboard() {
     }
   }
 
+  // Filtered & searched tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesFilter =
+        filter === 'all' ? true : filter === 'completed' ? task.completed : !task.completed
+      return matchesSearch && matchesFilter
+    })
+  }, [tasks, searchTerm, filter])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage)
+  const currentTasks = filteredTasks.slice(
+    (currentPage - 1) * tasksPerPage,
+    currentPage * tasksPerPage
+  )
+
   if (status === 'loading' || loading)
     return (
       <div className="min-h-screen flex flex-col justify-center items-center">
         <h1 className="text-4xl font-bold mb-4">Task Manager</h1>
         <p>Loading...</p>
-        {/* <pre className="text-xs mt-4 p-2 bg-gray-100 rounded">
-          {JSON.stringify({ status, session: session?.user }, null, 2)}
-        </pre> */}
       </div>
     )
 
   if (status === 'unauthenticated')
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-center p-6">
+      <div className="min-h-screen flex flex-col justify-center items-center text-center p-6 bg-amber-100">
         <h1 className="text-4xl font-bold mb-4">Task Manager</h1>
         <p className="mb-6">Please log in to view and manage your tasks.</p>
         <div className="space-x-3">
-          {/* <button onClick={() => signIn()} className="bg-black text-white px-4 py-2 rounded">Login</button> */}
-          <button className="bg-black text-white px-4 py-2 rounded-md mr-2">
-          <Link href="/login">Login</Link>
-        </button>
+          <button className="bg-black text-white px-4 py-2 rounded-md">
+            <Link href="/login">Login</Link>
+          </button>
         </div>
       </div>
     )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 ">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-4xl font-bold">Task Manager</h1>
@@ -146,15 +167,39 @@ export default function Dashboard() {
             Add Task
           </button>
         </form>
+        <div className="flex justify-between items-center mb-4 space-x-2">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <select
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value as 'all' | 'completed' | 'pending')
+              setCurrentPage(1)
+            }}
+            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="all">All</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
 
         {/* Task List */}
         <div className="bg-white p-6 rounded shadow space-y-4">
-          <h2 className="text-xl font-semibold">Your Tasks ({tasks.length})</h2>
-          {tasks.length === 0 ? (
-            <p className="text-gray-500">No tasks yet. Add one above!</p>
+          <h2 className="text-xl font-semibold">Your Tasks ({filteredTasks.length})</h2>
+          {currentTasks.length === 0 ? (
+            <p className="text-gray-500">No tasks found.</p>
           ) : (
             <div className="space-y-4">
-              {tasks.map((task) => (
+              {currentTasks.map((task) => (
                 <div
                   key={task._id}
                   className="flex justify-between items-start p-4 border border-gray-200 rounded hover:shadow"
@@ -164,7 +209,9 @@ export default function Dashboard() {
                       {task.title}
                     </h3>
                     {task.description && <p className="text-gray-600">{task.description}</p>}
-                    <small className="text-gray-500">Created: {new Date(task.createdAt).toLocaleDateString()}</small>
+                    <small className="text-gray-500">
+                      Created: {new Date(task.createdAt).toLocaleDateString()}
+                    </small>
                   </div>
                   <div className="flex flex-col space-y-2">
                     <button
@@ -182,6 +229,35 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4 space-x-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1 border rounded ${currentPage === i + 1 ? 'bg-blue-500 text-white' : ''}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
