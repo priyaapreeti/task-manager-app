@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Task from '../../../../models/Task'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '../auth/[...nextauth]/route'
 
-// GET /api/tasks - Fetch all tasks
+// GET /api/tasks - Fetch tasks for logged-in user
 export async function GET() {
   try {
+    const raw = await getServerSession(authOptions as any)
+    const session = raw as any
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
-    const tasks = await Task.find().sort({ createdAt: -1 })
+    const tasks = await Task.find({ userId: session.user.id }).sort({ createdAt: -1 })
     return NextResponse.json(tasks)
   } catch (error) {
     console.error('Error fetching tasks:', error)
@@ -17,9 +25,15 @@ export async function GET() {
   }
 }
 
-// POST /api/tasks - Create a new task
+// POST /api/tasks - Create a new task for logged-in user
 export async function POST(request: NextRequest) {
   try {
+    const raw = await getServerSession(authOptions as any)
+    const session = raw as any
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
     const body = await request.json()
     
@@ -33,6 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const task = new Task({
+      userId: session.user.id,
       title: title.trim(),
       description: description?.trim() || '',
       completed: false,

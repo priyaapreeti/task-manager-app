@@ -29,7 +29,7 @@ const LoginPage = () => {
         return;
       }
 
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     } catch (err) {
       setError('Something went wrong. Please try again.');
